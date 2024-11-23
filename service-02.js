@@ -15,12 +15,14 @@ const {
   heavyTask,
   maybeAnError,
 } = require("./helpers");
+const pinoHttp = require('pino-http');
 
 const log = createLogger(process.env.ES_HOST);
 
 const redis = createRedis();
 
 const app = require("express")();
+app.use(pinoHttp({logger: log}))
 
 app.get("/health", (req, res) => {
   res.status(200).send("OK");

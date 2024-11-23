@@ -17,6 +17,7 @@
     "ioredis": "^5.4.1",
     "pg": "^8.13.1",
     "pino": "^9.5.0",
-    "pino-elasticsearch": "^8.1.0"
+    "pino-elasticsearch": "^8.1.0",
+    "pino-http": "^10.3.0"
   }
 }

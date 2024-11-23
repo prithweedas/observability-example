@@ -8,8 +8,11 @@ const apm = require("elastic-apm-node").start({
 const { createLogger, apiCall } = require("./helpers");
 
 const log = createLogger(process.env.ES_HOST);
+const pinoHttp = require('pino-http');
 
 const app = require("express")();
+
+app.use(pinoHttp({logger: log}))
 
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
