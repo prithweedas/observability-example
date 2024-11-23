@@ -1,0 +1,131 @@
+services:
+  elasticsearch-setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    env_file: ./config/elasticsearch/.env
+    volumes:
+      - ./certs:/usr/share/elasticsearch/config/certs
+      - ./config/elasticsearch-setup.sh:/usr/share/elasticsearch/elasticsearch-setup.sh:ro
+      - ./config/instances.yml:/usr/share/elasticsearch/instances.yml:ro
+    command: ["bash", "./elasticsearch-setup.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f config/certs/elasticsearch/elasticsearch.crt ]"]
+      interval: 1s
+      timeout: 5s
+      retries: 120
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    env_file: ./config/elasticsearch/.env
+    ports:
+      - ${ELASTIC_PORT}:9200
+    labels:
+      co.elastic.logs/module: elasticsearch
+    volumes:
+      - ./certs:/usr/share/elasticsearch/config/certs
+    mem_limit: ${MEM_LIMIT}
+    depends_on:
+      elasticsearch-setup:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    labels:
+      co.elastic.logs/module: kibana
+    volumes:
+      - ./certs:/usr/share/kibana/config/certs
+    ports:
+      - ${KIBANA_PORT}:5601
+    env_file: ./config/kibana/.env
+    mem_limit: ${MEM_LIMIT}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I --cacert config/certs/ca/ca.crt https://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:${STACK_VERSION}
+    labels:
+      co.elastic.logs/module: apm-server
+    volumes:
+      - ./certs:/usr/share/apm-server/config/certs
+      - ./config/apm-server/apm-server.yml:/usr/share/apm-server/apm-server.yml:ro
+    ports:
+      - ${APM_PORT}:8200
+    env_file: ./config/apm-server/.env
+    mem_limit: ${MEM_LIMIT}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pwd"
+          # "curl -s --cacert config/certs/ca/ca.crt https://localhost:8200 | grep -q '\"publish_ready\": true'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+  
+  service-01:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      - APM_HOST=https://apm-server:8200
+      - ES_HOST=https://elasticsearch:9200
+      - SERVICE_02=http://service-02:3000
+    volumes:
+      - ./certs:/app/certs
+    command: ["node", "service-01.js"]
+    depends_on:
+      apm-server:
+        condition: service_healthy
+
+  service-02:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      - APM_HOST=https://apm-server:8200
+      - ES_HOST=https://elasticsearch:9200
+      - SERVICE_03=http://service-03:3000
+    volumes:
+      - ./certs:/app/certs
+    command: ["node", "service-02.js"]
+    depends_on:
+      apm-server:
+        condition: service_healthy
+
+  service-03:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      - APM_HOST=https://apm-server:8200
+      - ES_HOST=https://elasticsearch:9200
+    volumes:
+      - ./certs:/app/certs
+    command: ["node", "service-03.js"]
+    depends_on:
+      apm-server:
+        condition: service_healthy
