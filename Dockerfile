@@ -8,6 +8,8 @@ RUN npm install
 
 COPY *.js .
 
+COPY ./config/wait-for-apm.sh wait-for-apm.sh
+
 EXPOSE 3000
 
-CMD ["node", "service-01.js"]
+CMD sh wait-for-apm.sh "node service-01.js"

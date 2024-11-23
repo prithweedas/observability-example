@@ -1,4 +1,25 @@
 services:
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 3
+      start_period: 5s
+      timeout: 5s
+
+  postgres:
+    image: postgres:17.2
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=main_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d password"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   elasticsearch-setup:
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     env_file: ./config/elasticsearch/.env
@@ -16,8 +37,6 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     env_file: ./config/elasticsearch/.env
-    ports:
-      - ${ELASTIC_PORT}:9200
     labels:
       co.elastic.logs/module: elasticsearch
     volumes:
@@ -66,23 +85,11 @@ services:
     volumes:
       - ./certs:/usr/share/apm-server/config/certs
       - ./config/apm-server/apm-server.yml:/usr/share/apm-server/apm-server.yml:ro
-    ports:
-      - ${APM_PORT}:8200
     env_file: ./config/apm-server/.env
     mem_limit: ${MEM_LIMIT}
     depends_on:
       elasticsearch:
         condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pwd"
-          # "curl -s --cacert config/certs/ca/ca.crt https://localhost:8200 | grep -q '\"publish_ready\": true'",
-        ]
-      interval: 10s
-      timeout: 10s
-      retries: 120
   
   service-01:
     build:
@@ -96,10 +103,7 @@ services:
       - SERVICE_02=http://service-02:3000
     volumes:
       - ./certs:/app/certs
-    command: ["node", "service-01.js"]
-    depends_on:
-      apm-server:
-        condition: service_healthy
+    command: ["sh", "./wait-for-apm.sh", "node", "service-01.js"]
 
   service-02:
     build:
@@ -111,9 +115,9 @@ services:
       - SERVICE_03=http://service-03:3000
     volumes:
       - ./certs:/app/certs
-    command: ["node", "service-02.js"]
+    command: ["sh", "./wait-for-apm.sh", "node", "service-02.js"]
     depends_on:
-      apm-server:
+      redis:
         condition: service_healthy
 
   service-03:
@@ -125,7 +129,7 @@ services:
       - ES_HOST=https://elasticsearch:9200
     volumes:
       - ./certs:/app/certs
-    command: ["node", "service-03.js"]
+    command: ["sh", "./wait-for-apm.sh", "node", "service-03.js"]
     depends_on:
-      apm-server:
+      postgres:
         condition: service_healthy

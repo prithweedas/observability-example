@@ -5,18 +5,27 @@ const apm = require("elastic-apm-node").start({
   serverCaCertFile: "./certs/ca/ca.crt",
 });
 
-const { createLogger } = require("./helpers");
+const { createLogger, createRedis } = require("./helpers");
 
 const log = createLogger(process.env.ES_HOST)
+
+const redis = createRedis()
 
 const app = require("express")();
 
 app.get("/", async function (req, res) {
   try {
     log.info("Hey form service 2!");
-    await fetch(process.env.SERVICE_03);
-    throw new Error("Oh no!");
 
+    await fetch(process.env.SERVICE_03);
+
+    await redis.set('yo', 10)
+
+    const response = await redis.get('yo')
+
+    log.info(`Redis response: ${response}`)
+
+    
     res.send("Hello World!");
   } catch (error) {
     apm.captureError(error);
