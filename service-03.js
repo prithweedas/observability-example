@@ -14,12 +14,42 @@ const {
   heavyTask,
   maybeAnError,
 } = require("./helpers");
-const pinoHttp = require('pino-http');
+const pinoHttp = require("pino-http");
 
 const log = createLogger(process.env.ES_HOST);
 
 const app = require("express")();
-app.use(pinoHttp({logger: log}))
+
+app.use(
+  pinoHttp({
+    logger: log,
+
+    customLogLevel: function (req, res, err) {
+      if (res.statusCode >= 400 && res.statusCode < 500) {
+        return "warn";
+      } else if (res.statusCode >= 500 || err) {
+        return "error";
+      } else if (res.statusCode >= 300 && res.statusCode < 400) {
+        return "silent";
+      }
+      return "info";
+    },
+
+    customSuccessMessage: function (req, res) {
+      return res.statusCode === 404
+        ? `[${req.method}] ${req.url} - resource not found`
+        : `[${req.method}] ${req.url} - ${req.method} completed`;
+    },
+
+    customReceivedMessage: function (req, res) {
+      return `[${req.method}] ${req.url} - request received`;
+    },
+
+    customErrorMessage: function (req, res, err) {
+      return `[${req.method}] ${req.url} - request errored with status code ${res.statusCode}`;
+    },
+  })
+);
 
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
@@ -28,8 +58,6 @@ app.get("/health", (req, res) => {
 app.get("/", async function (req, res) {
   try {
     const pgPool = await createPostgresConnectionPool();
-
-    log.info("Hey form service 3!");
 
     const result = await postgresCall(pgPool, CHANCE);
 
