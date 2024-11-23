@@ -5,7 +5,7 @@ const apm = require("elastic-apm-node").start({
   serverCaCertFile: "./certs/ca/ca.crt",
 });
 
-const CHANCE = 0.4;
+const CHANCE = 0.2;
 
 const {
   createLogger,
