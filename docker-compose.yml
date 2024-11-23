@@ -90,7 +90,7 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-  
+
   service-01:
     build:
       context: ./
@@ -103,7 +103,7 @@ services:
       - SERVICE_02=http://service-02:3000
     volumes:
       - ./certs:/app/certs
-    command: ["sh", "./wait-for-apm.sh", "node", "service-01.js"]
+    command: ["sh", "./wait-for-apm.sh", "apm-server", "node", "service-01.js"]
 
   service-02:
     build:
@@ -115,7 +115,7 @@ services:
       - SERVICE_03=http://service-03:3000
     volumes:
       - ./certs:/app/certs
-    command: ["sh", "./wait-for-apm.sh", "node", "service-02.js"]
+    command: ["sh", "./wait-for-apm.sh", "apm-server", "node", "service-02.js"]
     depends_on:
       redis:
         condition: service_healthy
@@ -129,7 +129,7 @@ services:
       - ES_HOST=https://elasticsearch:9200
     volumes:
       - ./certs:/app/certs
-    command: ["sh", "./wait-for-apm.sh", "node", "service-03.js"]
+    command: ["sh", "./wait-for-apm.sh", "apm-server", "node", "service-03.js"]
     depends_on:
       postgres:
         condition: service_healthy

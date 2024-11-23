@@ -1,11 +1,12 @@
 const apm = require("elastic-apm-node").start({
+  disableSend: true,
   serviceName: "service-03",
   serverUrl: process.env.APM_HOST,
   environment: "development",
   serverCaCertFile: "./certs/ca/ca.crt",
 });
 
-const { createLogger, createPostgresConnectionPool } = require("./helpers");
+const { createLogger, createPostgresConnectionPool, postgresCall } = require("./helpers");
 
 const log = createLogger(process.env.ES_HOST);
 
@@ -16,22 +17,10 @@ app.get("/", async function (req, res) {
     const pgPool = await createPostgresConnectionPool();
 
     log.info("Hey form service 3!");
-
-    const computationSpan = apm.startSpan('Heavy Computation')
     
-    for (var i = 0; i < 100_000_000; i++) {}
+    const result = await postgresCall(pgPool);
     
-    computationSpan.end()
-    
-    const result = await pgPool.query("SELECT 1 as data");
-    
-    log.info(`Result: ${JSON.stringify(result.rows)}`)
-    
-    const anotherComputationSpan = apm.startSpan('Heavy Computation Again')
-
-    for (var i = 0; i < 100_000_000; i++) {}
-
-    anotherComputationSpan.end()
+    log.info(`Result: ${JSON.stringify(result)}`)
 
     res.send("Hello World!");
   } catch (error) {
