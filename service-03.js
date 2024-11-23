@@ -1,12 +1,18 @@
 const apm = require("elastic-apm-node").start({
-  disableSend: true,
   serviceName: "service-03",
   serverUrl: process.env.APM_HOST,
   environment: "development",
   serverCaCertFile: "./certs/ca/ca.crt",
 });
 
-const { createLogger, createPostgresConnectionPool, postgresCall } = require("./helpers");
+const CHANCE = 0.4;
+
+const {
+  createLogger,
+  createPostgresConnectionPool,
+  postgresCall,
+  heavyTask,
+} = require("./helpers");
 
 const log = createLogger(process.env.ES_HOST);
 
@@ -17,10 +23,16 @@ app.get("/", async function (req, res) {
     const pgPool = await createPostgresConnectionPool();
 
     log.info("Hey form service 3!");
-    
-    const result = await postgresCall(pgPool);
-    
-    log.info(`Result: ${JSON.stringify(result)}`)
+
+    const pgPromise = postgresCall(pgPool, CHANCE);
+
+    heavyTask();
+
+    const result = await pgPromise;
+
+    maybeAnError()
+
+    log.info(`Result: ${JSON.stringify(result)}`);
 
     res.send("Hello World!");
   } catch (error) {

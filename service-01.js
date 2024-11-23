@@ -5,16 +5,16 @@ const apm = require("elastic-apm-node").start({
   serverCaCertFile: "./certs/ca/ca.crt",
 });
 
-const { createLogger } = require("./helpers");
+const { createLogger, apiCall } = require("./helpers");
 
-const log = createLogger(process.env.ES_HOST)
+const log = createLogger(process.env.ES_HOST);
 
 const app = require("express")();
 
 app.get("/", async function (req, res) {
   try {
     log.info("Hey form service 1!");
-    await fetch(process.env.SERVICE_02);
+    await apiCall(process.env.SERVICE_02);
     log.info("Hey form service 1 again!");
     res.send("Hello World!");
   } catch (error) {

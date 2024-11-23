@@ -6,6 +6,14 @@ const path = require("node:path");
 const { Pool } = require("pg");
 const { default: Redis } = require("ioredis");
 
+exports.apiCall = async function (url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`HTTP Error - ${response.statusText}`);
+  }
+};
+
 exports.redisCall = async function (redis, chance = 0.2) {
   if (Math.random() < chance) {
     await redis.call("FAKECOMMAND", "key");
@@ -18,9 +26,11 @@ exports.redisCall = async function (redis, chance = 0.2) {
 
 exports.postgresCall = async function (postgres, chance = 0.2) {
   if (Math.random() < chance) {
-    await postgres.query("SELECT CAST('1N6' AS INTEGER) as data;")
+    await postgres.query("SELECT CAST('1N6' AS INTEGER) as data;");
   } else {
-    const response = await postgres.query("SELECT CAST('123' AS INTEGER) as data;")
+    const response = await postgres.query(
+      "SELECT CAST('123' AS INTEGER) as data;"
+    );
     return response.rows;
   }
 };
