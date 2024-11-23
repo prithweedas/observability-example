@@ -22,26 +22,30 @@ const redis = createRedis();
 
 const app = require("express")();
 
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 app.get("/", async function (req, res) {
   try {
     log.info("Hey form service 2!");
 
-    maybeAnError()
+    maybeAnError();
+
+    heavyTask(apm);
 
     const result = await redisCall(redis, CHANCE);
 
     log.info(`Redis response: ${result}`);
 
-    const promise = apiCall(process.env.SERVICE_03);
+    await apiCall(process.env.SERVICE_03);
 
-    heavyTask();
+    heavyTask(apm);
 
-    await promise;
-
-    res.send("Hello World!");
+    return res.send("Hello World!");
   } catch (error) {
     apm.captureError(error);
-    res.status(500).send("Error!");
+    return res.status(500).send("Error!");
   }
 });
 

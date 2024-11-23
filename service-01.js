@@ -11,15 +11,19 @@ const log = createLogger(process.env.ES_HOST);
 
 const app = require("express")();
 
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 app.get("/", async function (req, res) {
   try {
     log.info("Hey form service 1!");
     await apiCall(process.env.SERVICE_02);
     log.info("Hey form service 1 again!");
-    res.send("Hello World!");
+    return res.send("Hello World!");
   } catch (error) {
     apm.captureError(error);
-    res.status(500).send("Error!");
+    return res.status(500).send("Error!");
   }
 });
 
