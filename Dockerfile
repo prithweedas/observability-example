@@ -12,4 +12,4 @@ COPY ./config/wait-for-apm.sh wait-for-apm.sh
 
 EXPOSE 3000
 
-CMD sh wait-for-apm.sh "node service-01.js"
+CMD ["sh", "./wait-for-apm.sh", "apm-server", "node", "service-01.js"]

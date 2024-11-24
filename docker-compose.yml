@@ -151,3 +151,16 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  autocannon:
+    build:
+      context: ./
+      dockerfile: Dockerfile.autocannon
+    command: ["autocannon", "-d", "30", "http://service-01:3000"]
+    depends_on:
+      service-01:
+        condition: service_healthy
+      service-02:
+        condition: service_healthy
+      service-03:
+        condition: service_healthy
