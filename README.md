@@ -37,3 +37,13 @@ We know exactly where the failure originated and who should we reach out to.
 We also get the logs for the entire transaction, which gives us inportant information to debug.
 
 ![Logs for the entire transaction](./images/we-know-the-journey-end-to-end.png)
+
+
+---
+To run this demo `docker` and `docker compose` needs to be installed.
+
+```bash
+docker compose up -d --build
+```
+
+Once all the containers start go to `https://localhost:5600` to go to kibana and login with this credentials `elastic:password`.
