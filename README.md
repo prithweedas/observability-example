@@ -34,7 +34,7 @@ We know exactly where the failure originated and who should we reach out to.
 - Some service crashed? ping their owners.
 - Infra issue? loop-in devops.
 
-We also get the logs for the entire transaction, which gives us inportant information to debug.
+We also get the logs for the entire transaction, which gives us information to help debug.
 
 ![Logs for the entire transaction](./images/we-know-the-journey-end-to-end.png)
 
